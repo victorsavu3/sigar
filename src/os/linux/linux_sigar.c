@@ -24,6 +24,12 @@
 #include <sys/stat.h>
 #include <sys/times.h>
 #include <sys/utsname.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <linux/sockios.h>
+#include <linux/if.h>
+#include <linux/ethtool.h>
 
 #include "sigar.h"
 #include "sigar_private.h"
@@ -1734,6 +1740,42 @@ int sigar_net_route_list_get(sigar_t *sigar,
     return SIGAR_OK;
 }
 
+long get_link_speed(const char* interface)
+{
+     int sock;
+    struct ifreq ifr;
+    struct ethtool_cmd edata;
+    int rc;
+
+    sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (sock < 0) {
+        perror("socket");
+        return 0;
+    }
+
+    strncpy(ifr.ifr_name, "eth0", sizeof(ifr.ifr_name));
+    ifr.ifr_data = &edata;
+
+    edata.cmd = ETHTOOL_GSET;
+
+    rc = ioctl(sock, SIOCETHTOOL, &ifr);
+    if (rc < 0) {
+        perror("ioctl");
+        return 0;
+    }
+
+    switch (edata.speed) {
+        case SPEED_10:    return 10 * 100000; break; // 10Mbps
+        case SPEED_100:   return 100 * 100000; break; //100Mbps
+        case SPEED_1000:  return 1000 * 100000; break; // 1Gbps
+        case SPEED_2500:  return 2500 * 100000; break; // 2.5Gbps
+        case SPEED_10000: return 10000 * 100000; break; // 10Gbps
+        default: return 0;
+    }
+
+    return 0;
+}
+
 int sigar_net_interface_stat_get(sigar_t *sigar, const char *name,
                                  sigar_net_interface_stat_t *ifstat)
 {
@@ -1786,7 +1828,7 @@ int sigar_net_interface_stat_get(sigar_t *sigar, const char *name,
         ifstat->tx_collisions = sigar_strtoull(ptr);
         ifstat->tx_carrier    = sigar_strtoull(ptr);
 
-        ifstat->speed         = SIGAR_FIELD_NOTIMPL;
+        ifstat->speed         = get_link_speed(name);
 
         break;
     }
