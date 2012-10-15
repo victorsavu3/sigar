@@ -1753,23 +1753,22 @@ long get_link_speed(const char* interface)
         return 0;
     }
 
-    strncpy(ifr.ifr_name, "eth0", sizeof(ifr.ifr_name));
+    strncpy(ifr.ifr_name, interface, sizeof(ifr.ifr_name));
     ifr.ifr_data = &edata;
 
     edata.cmd = ETHTOOL_GSET;
 
     rc = ioctl(sock, SIOCETHTOOL, &ifr);
     if (rc < 0) {
-        perror("ioctl");
-        return 0;
+        return -1;
     }
 
     switch (edata.speed) {
-        case SPEED_10:    return 10 * 100000; break; // 10Mbps
-        case SPEED_100:   return 100 * 100000; break; //100Mbps
-        case SPEED_1000:  return 1000 * 100000; break; // 1Gbps
-        case SPEED_2500:  return 2500 * 100000; break; // 2.5Gbps
-        case SPEED_10000: return 10000 * 100000; break; // 10Gbps
+        case SPEED_10:    return 10 * 1000000; break; // 10Mbps
+        case SPEED_100:   return 100 * 1000000; break; //100Mbps
+        case SPEED_1000:  return 1000 * 1000000; break; // 1Gbps
+        case SPEED_2500:  return 2500 * 1000000; break; // 2.5Gbps
+        case SPEED_10000: return 10000 * 1000000; break; // 10Gbps
         default: return 0;
     }
 
