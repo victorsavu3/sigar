@@ -1759,6 +1759,9 @@ long get_link_speed(const char* interface)
     edata.cmd = ETHTOOL_GSET;
 
     rc = ioctl(sock, SIOCETHTOOL, &ifr);
+
+    close(sock);
+
     if (rc < 0) {
         return -1;
     }
